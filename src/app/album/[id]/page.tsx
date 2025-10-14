@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/db";
+import Link from "next/link";
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
@@ -31,6 +32,7 @@ export default async function AlbumDetail({
       "albums.name",
       "albums.release_date",
       "authors.name as author_name",
+      "authors.id as author_id",
     ])
     .where("albums.id", "=", albumId)
     .executeTakeFirst();
@@ -51,7 +53,10 @@ export default async function AlbumDetail({
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <div>
-          {album.name} by {album.author_name}
+          {album.name} by{" "}
+          <Link href={`/author/${album.author_id}`} className="text-primary">
+            {album.author_name}
+          </Link>
         </div>
         <div>
           <table className="table">
