@@ -14,6 +14,7 @@ export default function Navbar() {
     <div className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
         <Link href="/" className="btn btn-ghost text-xl">Spotify</Link>
+        <Link href="/playlists" className="btn btn-ghost">Playlists</Link>
       </div>
       <div className="flex gap-2">
         <input 

@@ -31,13 +31,19 @@ export default async function Search({
       .selectAll()
       .execute();
 
+  const playlists = await db
+      .selectFrom("playlists")
+      .where("name", "like", `%${q}%`)
+      .selectAll()
+      .execute();
+
   return (
     <div className="font-sans grid grid-rows-[80px_1fr_80px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <div className="text-xl">
         <b>Search results for <q>{q}</q></b>
       </div>
       <main>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
             <div className="text-lg font-bold mb-2">Albums</div>
             {albums.length === 0 && (<div className="text-sm text-gray-500">No albums found</div>)}
@@ -62,6 +68,15 @@ export default async function Search({
             {songs.map(song => (
               <div key={song.id}>
                 <Link href={`/song/${song.id}`} className="text-blue-500 hover:underline">{song.name}</Link>
+              </div>
+            ))}
+          </div>
+          <div>
+            <div className="text-lg font-bold mb-2">Playlists</div>
+            {playlists.length === 0 && (<div className="text-sm text-gray-500">No playlists found</div>)}
+            {playlists.map(playlist => (
+              <div key={playlist.id}>
+                <Link href={`/playlist/${playlist.id}`} className="text-blue-500 hover:underline">{playlist.name}</Link>
               </div>
             ))}
           </div>
