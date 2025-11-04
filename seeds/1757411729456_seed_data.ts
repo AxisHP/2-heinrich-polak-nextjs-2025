@@ -3,11 +3,12 @@ import { faker } from "@faker-js/faker";
 import type { Kysely } from "kysely";
 
 export async function seed(db: Kysely<DB>): Promise<void> {
+  await db.deleteFrom("playlists_songs").execute();
+  await db.deleteFrom("playlists").execute();
+  await db.deleteFrom("users").execute();
   await db.deleteFrom("songs").execute();
   await db.deleteFrom("albums").execute();
   await db.deleteFrom("authors").execute();
-  await db.deleteFrom("playlists_songs").execute();
-  await db.deleteFrom("playlists").execute();
 
   for (let i = 0; i < 20; i += 1) {
     const numBioParagraphs = faker.number.int({ min: 0, max: 5 });
@@ -70,16 +71,30 @@ export async function seed(db: Kysely<DB>): Promise<void> {
     }
   }
 
-  const numPlaylists = faker.number.int({ min: 5, max: 15 });
-
-  for (let i = 0; i < numPlaylists; i += 1) {
+  for (let new_user_id = 1; new_user_id < 12; new_user_id += 1) {
     await db
-      .insertInto("playlists")
+      .insertInto("users")
       .values({
-        name: faker.music.genre() + " " + faker.word.words(2),
+        id: new_user_id,
+        email: faker.internet.email(),
+        password: faker.internet.password(),
+        name: faker.person.fullName(),
       })
       .execute();
+
+    const numPlaylists = faker.number.int({ min: 1, max: 10 });
+    for (let j = 0; j < numPlaylists; j += 1) {
+      await db
+        .insertInto("playlists")
+        .values({
+          name: faker.music.genre() + " " + faker.word.words(2),
+          user_id: new_user_id,
+        })
+        .execute();
+    }
   }
+
+
 
   const playlists = await db.selectFrom("playlists").selectAll().execute();
   const allSongs = await db.selectFrom("songs").selectAll().execute();
