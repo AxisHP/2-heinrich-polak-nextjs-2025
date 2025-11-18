@@ -1,5 +1,7 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
+import { RemovePlaylistSongButton } from "./removePlaylistSongPlaylist";
+import { RemovePlaylistButton } from "./removePlaylistButton";
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
@@ -70,6 +72,7 @@ export default async function PlaylistDetail({
                 <th>Artist</th>
                 <th>Album</th>
                 <th>Duration</th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -94,6 +97,12 @@ export default async function PlaylistDetail({
                     </Link>
                   </td>
                   <td>{formatDuration(song.duration)}</td>
+                  <td>
+                    <RemovePlaylistSongButton
+                      playlistId={playlist.id}
+                      songId={song.song_id}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -105,7 +114,9 @@ export default async function PlaylistDetail({
             </p>
           )}
         </div>
-
+        <div className="mt-4">
+          <RemovePlaylistButton playlistId={playlist.id} />
+        </div>
         <div className="mt-4">
           <Link href="/playlists" className="btn btn-secondary">
             ← Back to Playlists

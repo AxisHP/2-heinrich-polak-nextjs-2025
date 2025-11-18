@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
+import { AddToPlaylistButton } from "./addToPlaylist";
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
@@ -49,6 +50,12 @@ export default async function AlbumDetail({
     .where("album_id", "=", albumId)
     .execute();
 
+  const playlists = await db
+    .selectFrom("playlists")
+    .where("user_id", "=", 1)
+    .selectAll()
+    .execute();
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
@@ -65,6 +72,7 @@ export default async function AlbumDetail({
                 <th>#</th>
                 <th>Title</th>
                 <th>Duration</th>
+                <th>Add to Playlist</th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +81,20 @@ export default async function AlbumDetail({
                   <td>{i + 1}</td>
                   <td>{song.name}</td>
                   <td>{formatDuration(song.duration)}</td>
+                  <td>
+                    <div className="dropdown">
+                      <div tabIndex={0} role="button" className="btn btn-xs">
+                        Add to Playlist
+                      </div>
+                      <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-[1] w-52 p-2 shadow">
+                        {playlists.map((playlist) => (
+                          <li key={playlist.id}>
+                            <AddToPlaylistButton playlistId={playlist.id} songId={song.id} playlistName={playlist.name} />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </td>
                 </tr>
               ))}
             </tbody>
