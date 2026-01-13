@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
+import CreatePlaylistModal from "./Modal";
 
 export default async function Playlists() {
   const db = getDb();
@@ -9,9 +10,7 @@ export default async function Playlists() {
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <button className="btn btn-secondary">
-          <Link href="/playlists/new">Create New Playlist</Link>
-        </button>
+        <CreatePlaylistModal />
         <h1 className="text-4xl font-bold">Playlists</h1>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {playlists.map((playlist) => (
