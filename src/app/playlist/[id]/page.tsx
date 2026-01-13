@@ -2,6 +2,7 @@ import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { RemovePlaylistSongButton } from "./removePlaylistSongPlaylist";
 import { RemovePlaylistButton } from "./removePlaylistButton";
+import EditPlaylistModal from "./EditPlaylistModal";
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
@@ -57,9 +58,7 @@ export default async function PlaylistDetail({
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start w-full max-w-4xl">
-        <button className="btn btn-secondary">
-          <Link className="btn" href={`/playlist/${playlist.id}/edit`}>Edit</Link>
-        </button>
+        <EditPlaylistModal playlistId={playlist.id} playlistName={playlist.name} />
         <div>
           <h1 className="text-4xl font-bold">{playlist.name}</h1>
           <p className="text-gray-500 mt-2">
