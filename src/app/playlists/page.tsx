@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
-import CreatePlaylistModal from "./Modal";
+import CreatePlaylistModal from "./CreatePlaylistModal";
 
 export default async function Playlists() {
   const db = getDb();

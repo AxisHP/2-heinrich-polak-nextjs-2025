@@ -33,7 +33,6 @@ export async function updatePlaylist(
     .execute();
 
   revalidatePath(`/playlist/${playlistId}`);
-  redirect(`/playlist/${playlistId}`);
 }
 
 export async function removeSongFromPlaylist(
