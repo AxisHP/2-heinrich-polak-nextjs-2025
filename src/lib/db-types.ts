@@ -41,6 +41,12 @@ export interface Songs {
   name: string;
 }
 
+export interface UserLikedSongs {
+  id: Generated<number>;
+  song_id: number;
+  user_id: number;
+}
+
 export interface Users {
   email: string;
   id: Generated<number>;
@@ -54,5 +60,6 @@ export interface DB {
   playlists: Playlists;
   playlists_songs: PlaylistsSongs;
   songs: Songs;
+  user_liked_songs: UserLikedSongs;
   users: Users;
 }

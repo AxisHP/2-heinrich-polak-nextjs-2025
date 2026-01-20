@@ -2,6 +2,9 @@ import { getDb } from "@/lib/db";
 import Link from "next/link";
 import { RemovePlaylistSongButton } from "./removePlaylistSongPlaylist";
 import { RemovePlaylistButton } from "./removePlaylistButton";
+import { ToggleLikeButton } from "../../liked_songs/toggleLikeButton";
+import { getLikedSongs } from "@/actions/liked_songs";
+
 import EditPlaylistModal from "./EditPlaylistModal";
 
 function formatDuration(duration: number): string {
@@ -55,6 +58,9 @@ export default async function PlaylistDetail({
     .where("playlists_songs.playlist_id", "=", playlistId)
     .execute();
 
+  const likedSongs = await getLikedSongs();
+  const likedSongIds = new Set(likedSongs.map((song) => song.song_id));
+
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start w-full max-w-4xl">
@@ -103,6 +109,11 @@ export default async function PlaylistDetail({
                     <RemovePlaylistSongButton
                       playlistId={playlist.id}
                       songId={song.song_id}
+                    />
+                    <ToggleLikeButton
+                      userId={1}
+                      songId={song.song_id}
+                      initialIsLiked={likedSongIds.has(song.song_id)}
                     />
                   </td>
                 </tr>
