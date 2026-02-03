@@ -86,7 +86,11 @@ export default async function AlbumDetail({
               {songs.map((song, i) => (
                 <tr key={song.id}>
                   <td>
-                    <LikeSongButton songId={song.id} isLiked={likedSet.has(song.id)} />
+                    <ToggleLikeButton 
+                      userId={1}
+                      songId={song.id} 
+                      initialIsLiked={likedSongIds.has(song.id)} 
+                    />
                   </td>
                   <td>{i + 1}</td>
                   <td>{song.name}</td>

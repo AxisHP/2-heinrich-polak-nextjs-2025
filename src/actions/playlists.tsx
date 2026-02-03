@@ -79,3 +79,25 @@ export async function addToPlaylist(playlistId: number, songId: number) {
   revalidatePath(`/playlist/${playlistId}`);
   redirect(`/playlist/${playlistId}`);
 }
+
+export async function getUserPlaylists(userId: number) {
+  const db = getDb();
+  const playlists = await db
+    .selectFrom("playlists")
+    .where("user_id", "=", userId)
+    .selectAll()
+    .execute();
+  return playlists;
+}
+
+export async function addSongToPlaylist(playlistId: number, songId: number) {
+  const db = getDb();
+  await db
+    .insertInto("playlists_songs")
+    .values({
+      playlist_id: playlistId,
+      song_id: songId,
+    })
+    .execute();
+  revalidatePath(`/playlist/${playlistId}`);
+}

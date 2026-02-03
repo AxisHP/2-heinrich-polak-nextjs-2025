@@ -28,6 +28,22 @@ export async function toggleLikedSong(
   revalidatePath(`/liked_songs`);
 }
 
+export async function checkIfSongIsLiked(
+  userId: number,
+  songId: number
+): Promise<boolean> {
+  const db = getDb();
+
+  const result = await db
+    .selectFrom("user_liked_songs")
+    .where("user_id", "=", userId)
+    .where("song_id", "=", songId)
+    .selectAll()
+    .executeTakeFirst();
+
+  return !!result;
+}
+
 export async function getLikedSongs() {
   const db = getDb();
 
