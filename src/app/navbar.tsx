@@ -16,6 +16,7 @@ export default function Navbar() {
         <Link href="/" className="btn btn-ghost text-xl">Spotify</Link>
         <Link href="/playlists" className="btn btn-ghost">Playlists</Link>
         <Link href="/liked_songs" className="btn btn-ghost">Liked songs</Link>
+        <Link href="/history" className="btn btn-ghost">History</Link>
       </div>
       <div className="flex gap-2">
         <input 

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { toggleLikedSong, checkIfSongIsLiked } from "@/actions/liked_songs";
 import { getUserPlaylists, addSongToPlaylist } from "@/actions/playlists";
 import { getSongs } from "@/actions/songs";
+import { recordPlaybackEvent } from "@/actions/playback_events";
 
 interface Song {
   id: number;
@@ -34,18 +35,25 @@ export function PlaybackBar() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
   const dropdownRef = useRef<HTMLDetailsElement>(null);
+  const hasFinishedRef = useRef(false);
+  const isTransitioningRef = useRef(false);
 
   const [playbackStart, setPlaybackStart] = useState<{
     timestamp: number;
     progressAtStart: number;
   } | null>(null);
 
-  function startPlayback() {
+  async function startPlayback() {
+    hasFinishedRef.current = false;
     setPlaybackStart({
       timestamp: Date.now(),
       progressAtStart: progress,
     });
     setIsPlaying(true);
+    
+    if (currentSong && progress < 2) {
+      await recordPlaybackEvent(currentSong.id, "playback_start");
+    }
   }
 
   function pausePlayback() {
@@ -71,17 +79,25 @@ export function PlaybackBar() {
     }
   }
 
-  function nextSong() {
-    if (!currentSong || queue.length === 0) return;
+  async function nextSong(isManualSkip = false) {
+    if (!currentSong || queue.length === 0 || isTransitioningRef.current) return;
+    
+    isTransitioningRef.current = true;
+    hasFinishedRef.current = false;
+    
+    // Record event for the OLD song FIRST
+    if (isManualSkip) {
+      await recordPlaybackEvent(currentSong.id, "playback_skip");
+    } else {
+      await recordPlaybackEvent(currentSong.id, "playback_finish");
+    }
     
     let nextSongToPlay: Song | null = null;
     
     if (isShuffle) {
-      // Pick a random song from queue
       const randomIndex = Math.floor(Math.random() * queue.length);
       nextSongToPlay = queue[randomIndex];
     } else {
-      // Pick next song in order
       const currentIndex = queue.findIndex(song => song.id === currentSong.id);
       if (currentIndex < queue.length - 1) {
         nextSongToPlay = queue[currentIndex + 1];
@@ -89,15 +105,21 @@ export function PlaybackBar() {
     }
     
     if (nextSongToPlay) {
+      const wasPlaying = isPlaying;
+      
       setCurrentSong(nextSongToPlay);
       setProgress(0);
-      if (isPlaying) {
+      
+      if (wasPlaying) {
         setPlaybackStart({
           timestamp: Date.now(),
           progressAtStart: 0,
         });
+        await recordPlaybackEvent(nextSongToPlay.id, "playback_start");
       }
     }
+    
+    isTransitioningRef.current = false;
   }
 
   async function toggleLike() {
@@ -137,6 +159,7 @@ export function PlaybackBar() {
   useEffect(() => {
     async function checkLikedStatus() {
       if (!currentSong) return;
+      hasFinishedRef.current = false;
       const isLiked = await checkIfSongIsLiked(1, currentSong.id);
       setIsLiked(isLiked);
     }
@@ -147,13 +170,17 @@ export function PlaybackBar() {
     if (!isPlaying || currentSong == null || playbackStart == null) return;
 
     const interval = setInterval(() => {
+      if (isTransitioningRef.current) return;
+      
       const elapsed = (Date.now() - playbackStart.timestamp) / 1000;
       const newProgress = playbackStart.progressAtStart + elapsed;
 
-      if (newProgress >= currentSong.duration) {
+      if (newProgress >= currentSong.duration && !hasFinishedRef.current) {
+        hasFinishedRef.current = true;
         setProgress(currentSong.duration);
-        nextSong();
-      } else {
+        clearInterval(interval);
+        nextSong(false);
+      } else if (newProgress < currentSong.duration) {
         setProgress(newProgress);
       }
     }, 100);
@@ -249,7 +276,7 @@ export function PlaybackBar() {
             )}
           </button>
 
-          <button className="btn btn-circle btn-sm btn-ghost" onClick={nextSong}>
+          <button className="btn btn-circle btn-sm btn-ghost" onClick={() => nextSong(true)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
