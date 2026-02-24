@@ -1,11 +1,17 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
 import CreatePlaylistModal from "./CreatePlaylistModal";
+import getCurrentUser from "@/actions/get_current_user";
 
 export default async function Playlists() {
+  const userId = await getCurrentUser();
+  if (!userId) {
+    return <div>Please log in to view playlists.</div>;
+  }
+  
   const db = getDb();
 
-  const playlists = await db.selectFrom("playlists").where("user_id", "=", 1).selectAll().execute();
+  const playlists = await db.selectFrom("playlists").where("user_id", "=", userId).selectAll().execute();
 
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">

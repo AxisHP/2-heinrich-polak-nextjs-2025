@@ -2,6 +2,7 @@
 
 import { getDb } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import getCurrentUser from "@/actions/get_current_user"
 
 export async function toggleLikedSong(
   userId: number,
@@ -46,13 +47,17 @@ export async function checkIfSongIsLiked(
 
 export async function getLikedSongs() {
   const db = getDb();
+  const userId = await getCurrentUser();
+  if (!userId) {
+    return [];
+  }
 
   const likedSongs = await db
     .selectFrom("user_liked_songs")
     .innerJoin("songs", "user_liked_songs.song_id", "songs.id")
     .innerJoin("albums", "songs.album_id", "albums.id")
     .innerJoin("authors", "albums.author_id", "authors.id")
-    .where("user_id", "=", 1)
+    .where("user_id", "=", userId)
     .select([
       "songs.id as song_id",
       "songs.name as song_name",

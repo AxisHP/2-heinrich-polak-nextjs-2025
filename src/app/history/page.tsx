@@ -1,6 +1,12 @@
+import getCurrentUser from "@/actions/get_current_user";
 import { getDb } from "@/lib/db";
 
 export default async function HistoryPage() {
+  const userId = await getCurrentUser();
+  if (!userId) {
+    return <div>Please log in to view playback history.</div>;
+  }
+
   const db = getDb();
 
   const history = await db
@@ -11,7 +17,7 @@ export default async function HistoryPage() {
       "playback_events.event_name",
       "playback_events.event_timestamp",
     ])
-    .where("playback_events.user_id", "=", 1)
+    .where("playback_events.user_id", "=", userId)
     .orderBy("playback_events.event_timestamp", "desc")
     .execute();
 

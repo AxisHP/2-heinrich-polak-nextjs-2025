@@ -3,6 +3,8 @@ import Link from "next/link";
 import { AddToPlaylistButton } from "./addToPlaylist";
 import { ToggleLikeButton } from "../../liked_songs/toggleLikeButton";
 import { getLikedSongs } from "@/actions/liked_songs";
+import getCurrentUser from "@/actions/get_current_user";
+
 
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
@@ -16,6 +18,11 @@ export default async function AlbumDetail({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const userId = await getCurrentUser();
+  if (!userId) {
+    return <div>Please log in to view album details.</div>;
+  }
+
   const db = getDb();
 
   const { id } = await params;
@@ -54,7 +61,7 @@ export default async function AlbumDetail({
 
   const playlists = await db
     .selectFrom("playlists")
-    .where("user_id", "=", 1)
+    .where("user_id", "=", userId)
     .selectAll()
     .execute();
 

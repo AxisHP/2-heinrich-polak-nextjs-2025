@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { handleLogout } from '@/actions/login'
 
 export default function Navbar() {
   const [searchInput, setSearchInput] = useState("");
@@ -17,6 +18,7 @@ export default function Navbar() {
         <Link href="/playlists" className="btn btn-ghost">Playlists</Link>
         <Link href="/liked_songs" className="btn btn-ghost">Liked songs</Link>
         <Link href="/history" className="btn btn-ghost">History</Link>
+        <Link href='/login' className="btn btn-ghost">Login</Link>
       </div>
       <div className="flex gap-2">
         <input 
@@ -32,7 +34,7 @@ export default function Navbar() {
             }
           }}
         />
-        <Link className="btn btn-primary text-xl" href={`{}`}>Search</Link>
+        <Link className="btn btn-primary text-xl" href={`/search?q=${encodeURIComponent(searchInput)}`}>Search</Link>
       </div>
       <div className="flex-none gap-2">
 
@@ -51,13 +53,11 @@ export default function Navbar() {
             tabIndex={-1}
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
             <li>
-              <Link className="justify-between" href="/profile">
-                Profile
-                <span className="badge">New</span>
-              </Link>
+              <Link className="justify-between" href="/">
+                Profile</Link>
             </li>
             <li><Link href="/settings">Settings</Link></li>
-            <li><Link href="/logout">Logout</Link></li>
+            <li><button onClick={() => handleLogout()}>Logout</button></li>
           </ul>
         </div>
       </div>

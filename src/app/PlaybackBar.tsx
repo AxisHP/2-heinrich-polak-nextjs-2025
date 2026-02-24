@@ -5,6 +5,7 @@ import { toggleLikedSong, checkIfSongIsLiked } from "@/actions/liked_songs";
 import { getUserPlaylists, addSongToPlaylist } from "@/actions/playlists";
 import { getSongs } from "@/actions/songs";
 import { recordPlaybackEvent } from "@/actions/playback_events";
+import getCurrentUser from "@/actions/get_current_user";
 
 interface Song {
   id: number;
@@ -34,6 +35,7 @@ export function PlaybackBar() {
   const [isLiked, setIsLiked] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [isShuffle, setIsShuffle] = useState(false);
+  const [userId, setUserId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDetailsElement>(null);
   const hasFinishedRef = useRef(false);
   const isTransitioningRef = useRef(false);
@@ -42,6 +44,14 @@ export function PlaybackBar() {
     timestamp: number;
     progressAtStart: number;
   } | null>(null);
+
+  useEffect(() => {
+    async function fetchCurrentUser() {
+      const userId = await getCurrentUser();
+      setUserId(userId);
+    }
+    fetchCurrentUser();
+  }, []);
 
   async function startPlayback() {
     hasFinishedRef.current = false;
@@ -124,7 +134,7 @@ export function PlaybackBar() {
 
   async function toggleLike() {
     if (!currentSong) return;
-    const userId = 1;
+    if (!userId) return;
     await toggleLikedSong(userId, currentSong.id, !isLiked);
     setIsLiked(!isLiked);
   }
@@ -139,7 +149,8 @@ export function PlaybackBar() {
 
   useEffect(() => {
     async function fetchPlaylists() {
-      const userPlaylists = await getUserPlaylists(1);
+      if (!userId) return;
+      const userPlaylists = await getUserPlaylists(userId);
       setPlaylists(userPlaylists);
     }
     fetchPlaylists();
@@ -159,8 +170,9 @@ export function PlaybackBar() {
   useEffect(() => {
     async function checkLikedStatus() {
       if (!currentSong) return;
+      if (!userId) return;
       hasFinishedRef.current = false;
-      const isLiked = await checkIfSongIsLiked(1, currentSong.id);
+      const isLiked = await checkIfSongIsLiked(userId, currentSong.id);
       setIsLiked(isLiked);
     }
     checkLikedStatus();
