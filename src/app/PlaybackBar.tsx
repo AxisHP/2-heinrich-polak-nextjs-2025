@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { toggleLikedSong, checkIfSongIsLiked } from "@/actions/liked_songs";
 import { getUserPlaylists, addSongToPlaylist } from "@/actions/playlists";
 import { getSongs } from "@/actions/songs";
 import { recordPlaybackEvent } from "@/actions/playback_events";
 import getCurrentUser from "@/actions/get_current_user";
+import { PlaybackContext } from "./playback-context";
 
 interface Song {
   id: number;
@@ -20,6 +21,20 @@ interface Playlist {
   user_id: number;
 }
 
+interface PlaybackStatus {
+  queue: Song[];
+  currentSongIndex: number | null;
+  isPlaying: boolean;
+  progress: number;
+  playbackStart: {
+    timestamp: number;
+    progressAtStart: number;
+  } | null;
+  isShuffled: boolean;
+  shuffleOrder: number[] | null;
+  shufflePosition: number;
+}
+
 function formatDuration(duration: number): string {
   const minutes = Math.floor(duration / 60);
   const seconds = Math.floor(duration % 60);
@@ -28,9 +43,11 @@ function formatDuration(duration: number): string {
 }
 
 export function PlaybackBar() {
+  const playbackContext = useContext(PlaybackContext);
+  const { isPlaying, setIsPlaying, dummy, setDummy } = playbackContext;
+
   const [queue, setQueue] = useState<Song[]>([]);
   const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(87);
   const [isLiked, setIsLiked] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -44,6 +61,8 @@ export function PlaybackBar() {
     timestamp: number;
     progressAtStart: number;
   } | null>(null);
+
+  
 
   useEffect(() => {
     async function fetchCurrentUser() {
@@ -381,6 +400,11 @@ export function PlaybackBar() {
           )}
         </button>
       </div>
+      <div>isPlaying: {isPlaying ? "true" : "false"}</div>
+      <div>Dummy: {dummy}</div>
+      <button className="btn btn-xs" onClick={() => setDummy(dummy + 1)}>
+        +
+      </button>
     </div>
   );
 }
