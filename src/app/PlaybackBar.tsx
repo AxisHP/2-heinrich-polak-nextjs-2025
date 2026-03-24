@@ -1,6 +1,6 @@
 "use client";
 
-import { useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { toggleLikedSong, checkIfSongIsLiked } from "@/actions/liked_songs";
 import { getUserPlaylists, addSongToPlaylist } from "@/actions/playlists";
 import { getSongs } from "@/actions/songs";
@@ -8,31 +8,10 @@ import { recordPlaybackEvent } from "@/actions/playback_events";
 import getCurrentUser from "@/actions/get_current_user";
 import { PlaybackContext } from "./playback-context";
 
-interface Song {
-  id: number;
-  name: string;
-  artist: string;
-  duration: number;
-}
-
 interface Playlist {
   id: number;
   name: string;
   user_id: number;
-}
-
-interface PlaybackStatus {
-  queue: Song[];
-  currentSongIndex: number | null;
-  isPlaying: boolean;
-  progress: number;
-  playbackStart: {
-    timestamp: number;
-    progressAtStart: number;
-  } | null;
-  isShuffled: boolean;
-  shuffleOrder: number[] | null;
-  shufflePosition: number;
 }
 
 function formatDuration(duration: number): string {
@@ -44,23 +23,27 @@ function formatDuration(duration: number): string {
 
 export function PlaybackBar() {
   const playbackContext = useContext(PlaybackContext);
-  const { isPlaying, setIsPlaying, dummy, setDummy } = playbackContext;
+  const {
+    queue,
+    setQueue,
+    currentSong,
+    setCurrentSong,
+    isPlaying,
+    setIsPlaying,
+    progress,
+    setProgress,
+    playbackStart,
+    setPlaybackStart,
+    dummy,
+    setDummy,
+  } = playbackContext;
 
-  const [queue, setQueue] = useState<Song[]>([]);
-  const [currentSong, setCurrentSong] = useState<Song | null>(null);
-  const [progress, setProgress] = useState(87);
   const [isLiked, setIsLiked] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
-  const [isShuffle, setIsShuffle] = useState(false);
   const [userId, setUserId] = useState<number | null>(null);
   const dropdownRef = useRef<HTMLDetailsElement>(null);
   const hasFinishedRef = useRef(false);
   const isTransitioningRef = useRef(false);
-
-  const [playbackStart, setPlaybackStart] = useState<{
-    timestamp: number;
-    progressAtStart: number;
-  } | null>(null);
 
   
 
@@ -108,8 +91,19 @@ export function PlaybackBar() {
     }
   }
 
-  async function nextSong(isManualSkip = false) {
-    if (!currentSong || queue.length === 0 || isTransitioningRef.current) return;
+  const nextSong = useCallback(async (isManualSkip = false) => {
+    const currentSongIndex = currentSong
+      ? queue.findIndex((song) => song.id === currentSong.id)
+      : -1;
+
+    if (
+      !currentSong ||
+      queue.length === 0 ||
+      currentSongIndex < 0 ||
+      isTransitioningRef.current
+    ) {
+      return;
+    }
     
     isTransitioningRef.current = true;
     hasFinishedRef.current = false;
@@ -121,24 +115,19 @@ export function PlaybackBar() {
       await recordPlaybackEvent(currentSong.id, "playback_finish");
     }
     
-    let nextSongToPlay: Song | null = null;
-    
-    if (isShuffle) {
-      const randomIndex = Math.floor(Math.random() * queue.length);
-      nextSongToPlay = queue[randomIndex];
-    } else {
-      const currentIndex = queue.findIndex(song => song.id === currentSong.id);
-      if (currentIndex < queue.length - 1) {
-        nextSongToPlay = queue[currentIndex + 1];
-      }
+    let nextIndex: number | null = null;
+
+    if (currentSongIndex < queue.length - 1) {
+      nextIndex = currentSongIndex + 1;
     }
-    
-    if (nextSongToPlay) {
+
+    if (nextIndex !== null) {
+      const nextSongToPlay = queue[nextIndex];
       const wasPlaying = isPlaying;
-      
+
       setCurrentSong(nextSongToPlay);
       setProgress(0);
-      
+
       if (wasPlaying) {
         setPlaybackStart({
           timestamp: Date.now(),
@@ -149,7 +138,14 @@ export function PlaybackBar() {
     }
     
     isTransitioningRef.current = false;
-  }
+      }, [
+        currentSong,
+        queue,
+        isPlaying,
+        setCurrentSong,
+        setProgress,
+        setPlaybackStart,
+      ]);
 
   async function toggleLike() {
     if (!currentSong) return;
@@ -173,18 +169,17 @@ export function PlaybackBar() {
       setPlaylists(userPlaylists);
     }
     fetchPlaylists();
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     async function fetchSongs() {
       const songs = await getSongs(10);
       setQueue(songs);
-      if (songs.length > 0) {
-        setCurrentSong(songs[0]);
-      }
+      setCurrentSong(songs.length > 0 ? songs[0] : null);
+      setProgress(0);
     }
     fetchSongs();
-  }, []);
+  }, [setQueue, setCurrentSong, setProgress]);
 
   useEffect(() => {
     async function checkLikedStatus() {
@@ -195,7 +190,7 @@ export function PlaybackBar() {
       setIsLiked(isLiked);
     }
     checkLikedStatus();
-  }, [currentSong]);
+  }, [currentSong, userId]);
 
   useEffect(() => {
     if (!isPlaying || currentSong == null || playbackStart == null) return;
@@ -219,7 +214,7 @@ export function PlaybackBar() {
     return () => {
       clearInterval(interval);
     };
-  }, [isPlaying, currentSong, playbackStart]);
+  }, [isPlaying, currentSong, playbackStart, nextSong, setProgress]);
 
   const duration = currentSong?.duration || 0;
   const remaining = duration - progress;
@@ -243,26 +238,6 @@ export function PlaybackBar() {
 
       <div className="flex flex-col items-center gap-1 flex-1 max-w-xl">
         <div className="flex items-center gap-2">
-          <button 
-            className={`btn btn-circle btn-sm btn-ghost ${isShuffle ? 'text-primary' : ''}`}
-            onClick={() => setIsShuffle(!isShuffle)}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"
-              />
-            </svg>
-          </button>
-
           <button className="btn btn-circle btn-sm btn-ghost" onClick={() => seekTo(0)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
