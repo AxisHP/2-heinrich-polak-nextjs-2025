@@ -81,7 +81,6 @@ export default async function AlbumDetail({
           <table className="table">
             <thead>
               <tr>
-                <th></th>
                 <th>#</th>
                 <th>Title</th>
                 <th>Duration</th>
@@ -92,13 +91,6 @@ export default async function AlbumDetail({
             <tbody>
               {songs.map((song, i) => (
                 <tr key={song.id}>
-                  <td>
-                    <ToggleLikeButton 
-                      userId={1}
-                      songId={song.id} 
-                      initialIsLiked={likedSongIds.has(song.id)} 
-                    />
-                  </td>
                   <td>{i + 1}</td>
                   <td>{song.name}</td>
                   <td>{formatDuration(song.duration)}</td>

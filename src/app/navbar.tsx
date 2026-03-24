@@ -17,11 +17,6 @@ export default function Navbar() {
   return (
     <div className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
-        <div>isPlaying: {isPlaying ? "true" : "false"}</div>
-        <div>Dummy: {dummy}</div>
-        <button className="btn btn-xs" onClick={() => setDummy(dummy + 1)}>
-          +
-        </button>
         <Link href="/" className="btn btn-ghost text-xl">Spotify</Link>
         <Link href="/playlists" className="btn btn-ghost">Playlists</Link>
         <Link href="/liked_songs" className="btn btn-ghost">Liked songs</Link>

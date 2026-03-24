@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Play } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "./navbar";
 import { PlaybackBar } from "./PlaybackBar";
 import { PlaybackContextProvider } from "./PlaybackContextProvider";
+import { SideBar } from "./SideBar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,11 +31,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       > <PlaybackContextProvider>
-          <div className="pb-4">{children}</div>
-          <div className="fixed top-0 left-0 right-0">
+          <div>
+            <div className="pb-4 pr-64">
+              {children}
+            </div>
+            <div className="fixed top-16 right-0 bottom-24 w-64 overflow-y-auto border-l border-base-300 bg-base-100 p-3 z-10">
+              <SideBar />
+            </div>
+          </div>
+          <div className="fixed top-0 left-0 right-0 z-30">
             <Navbar />
           </div>
-          <div className="fixed h-24 bg-base-100 bottom-0 left-0 right-0 inset-shadow-sm">
+          <div className="fixed h-24 bg-base-100 bottom-0 left-0 right-0 inset-shadow-sm z-30">
             <PlaybackBar />
           </div>
         </PlaybackContextProvider>

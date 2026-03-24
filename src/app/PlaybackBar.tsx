@@ -6,6 +6,7 @@ import { getUserPlaylists, addSongToPlaylist } from "@/actions/playlists";
 import { getSongs } from "@/actions/songs";
 import { recordPlaybackEvent } from "@/actions/playback_events";
 import getCurrentUser from "@/actions/get_current_user";
+import { getNextSongToPlay } from "@/lib/playback";
 import { PlaybackContext } from "./playback-context";
 
 interface Playlist {
@@ -34,16 +35,20 @@ export function PlaybackBar() {
     setProgress,
     playbackStart,
     setPlaybackStart,
-    dummy,
-    setDummy,
+    isShuffled,
+    setIsShuffled,
+    setShuffleOrder,
+    setShufflePosition,
   } = playbackContext;
 
   const [isLiked, setIsLiked] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [userId, setUserId] = useState<number | null>(null);
+  const [isRepeatEnabled, setIsRepeatEnabled] = useState(false);
   const dropdownRef = useRef<HTMLDetailsElement>(null);
   const hasFinishedRef = useRef(false);
   const isTransitioningRef = useRef(false);
+  const originalQueueRef = useRef<typeof queue | null>(null);
 
   
 
@@ -91,15 +96,54 @@ export function PlaybackBar() {
     }
   }
 
-  const nextSong = useCallback(async (isManualSkip = false) => {
-    const currentSongIndex = currentSong
-      ? queue.findIndex((song) => song.id === currentSong.id)
-      : -1;
+  function toggleRepeatQueue() {
+    setIsRepeatEnabled((prev) => !prev);
+  }
 
+  function shuffleSongs(songs: typeof queue) {
+    const shuffled = [...songs];
+
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    return shuffled;
+  }
+
+  function toggleShuffleQueue() {
+    if (!currentSong || queue.length <= 1) {
+      return;
+    }
+
+    if (!isShuffled) {
+      originalQueueRef.current = [...queue];
+
+      const currentSongFromQueue =
+        queue.find((song) => song.id === currentSong.id) ?? currentSong;
+      const remainingSongs = queue.filter((song) => song.id !== currentSong.id);
+      const shuffledQueue = [currentSongFromQueue, ...shuffleSongs(remainingSongs)];
+
+      setQueue(shuffledQueue);
+      setIsShuffled(true);
+      setShuffleOrder(shuffledQueue.map((song) => song.id));
+      setShufflePosition(0);
+      return;
+    }
+
+    const restoredQueue = originalQueueRef.current ? [...originalQueueRef.current] : [...queue];
+
+    setQueue(restoredQueue);
+    setIsShuffled(false);
+    setShuffleOrder(null);
+    setShufflePosition(0);
+    originalQueueRef.current = null;
+  }
+
+  const nextSong = useCallback(async (isManualSkip = false) => {
     if (
       !currentSong ||
       queue.length === 0 ||
-      currentSongIndex < 0 ||
       isTransitioningRef.current
     ) {
       return;
@@ -114,18 +158,15 @@ export function PlaybackBar() {
     } else {
       await recordPlaybackEvent(currentSong.id, "playback_finish");
     }
-    
-    let nextIndex: number | null = null;
 
-    if (currentSongIndex < queue.length - 1) {
-      nextIndex = currentSongIndex + 1;
-    }
+    const nextSongToPlay = getNextSongToPlay(queue, currentSong);
+    const shouldWrapQueue = isRepeatEnabled && !nextSongToPlay && queue.length > 0;
+    const songToPlay = nextSongToPlay ?? (shouldWrapQueue ? queue[0] : null);
 
-    if (nextIndex !== null) {
-      const nextSongToPlay = queue[nextIndex];
+    if (songToPlay) {
       const wasPlaying = isPlaying;
 
-      setCurrentSong(nextSongToPlay);
+      setCurrentSong(songToPlay);
       setProgress(0);
 
       if (wasPlaying) {
@@ -133,8 +174,11 @@ export function PlaybackBar() {
           timestamp: Date.now(),
           progressAtStart: 0,
         });
-        await recordPlaybackEvent(nextSongToPlay.id, "playback_start");
+        await recordPlaybackEvent(songToPlay.id, "playback_start");
       }
+    } else {
+      setIsPlaying(false);
+      setPlaybackStart(null);
     }
     
     isTransitioningRef.current = false;
@@ -142,7 +186,9 @@ export function PlaybackBar() {
         currentSong,
         queue,
         isPlaying,
+        isRepeatEnabled,
         setCurrentSong,
+        setIsPlaying,
         setProgress,
         setPlaybackStart,
       ]);
@@ -177,9 +223,13 @@ export function PlaybackBar() {
       setQueue(songs);
       setCurrentSong(songs.length > 0 ? songs[0] : null);
       setProgress(0);
+      setIsShuffled(false);
+      setShuffleOrder(null);
+      setShufflePosition(0);
+      originalQueueRef.current = null;
     }
     fetchSongs();
-  }, [setQueue, setCurrentSong, setProgress]);
+  }, [setQueue, setCurrentSong, setProgress, setIsShuffled, setShuffleOrder, setShufflePosition]);
 
   useEffect(() => {
     async function checkLikedStatus() {
@@ -238,6 +288,28 @@ export function PlaybackBar() {
 
       <div className="flex flex-col items-center gap-1 flex-1 max-w-xl">
         <div className="flex items-center gap-2">
+          <button
+            className={`btn btn-circle btn-sm ${isShuffled ? "btn-primary" : "btn-ghost"}`}
+            aria-label="Shuffle"
+            onClick={toggleShuffleQueue}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="w-4 h-4"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 3l-8 8" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h2a4 4 0 0 1 2.828 1.172L11 10.343" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 18h2a4 4 0 0 0 2.828-1.172L21 3" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 21h5v-5" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-8-8" />
+            </svg>
+          </button>
+
           <button className="btn btn-circle btn-sm btn-ghost" onClick={() => seekTo(0)}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -290,6 +362,26 @@ export function PlaybackBar() {
               className="w-4 h-4"
             >
               <path d="M5.055 7.06c-1.25-.714-2.805.189-2.805 1.628v8.123c0 1.44 1.555 2.342 2.805 1.628L12 14.471v2.34c0 1.44 1.555 2.342 2.805 1.628l7.108-4.061c1.26-.72 1.26-2.536 0-3.256L14.805 7.06C13.555 6.346 12 7.25 12 8.688v2.34L5.055 7.06z" />
+            </svg>
+          </button>
+
+          <button
+            className={`btn btn-circle btn-sm ${isRepeatEnabled ? "btn-primary" : "btn-ghost"}`}
+            aria-label={isRepeatEnabled ? "Repeat queue on" : "Repeat queue off"}
+            onClick={toggleRepeatQueue}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              className="w-4 h-4"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="m17 1 4 4-4 4" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="m7 23-4-4 4-4" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 13v2a4 4 0 0 1-4 4H3" />
             </svg>
           </button>
         </div>
@@ -375,11 +467,6 @@ export function PlaybackBar() {
           )}
         </button>
       </div>
-      <div>isPlaying: {isPlaying ? "true" : "false"}</div>
-      <div>Dummy: {dummy}</div>
-      <button className="btn btn-xs" onClick={() => setDummy(dummy + 1)}>
-        +
-      </button>
     </div>
   );
 }
