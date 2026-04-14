@@ -1,5 +1,8 @@
 import { getDb } from "@/lib/db";
 import Link from "next/link";
+import { ToggleFollowButton } from "@/app/followed_artists/toggleFollowButton";
+import getCurrentUser from "@/actions/get_current_user";
+import { getFollowedArtists } from "@/actions/followed_artists";
 
 export default async function AuthorDetail({
   params,
@@ -31,6 +34,12 @@ export default async function AuthorDetail({
     .select(["id", "name", "release_date"])
     .where("author_id", "=", authorId)
     .execute();
+  
+  
+  const userId = await getCurrentUser();
+
+  const followedArtists = await getFollowedArtists()
+  const followedArtistsIds = new Set(followedArtists.map((artist) => artist.author_id));
 
   return (
     <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
@@ -38,6 +47,11 @@ export default async function AuthorDetail({
         <div>
           <h1 className="text-3xl font-bold">{author.name}</h1>
           <p className="mt-2 text-base">{author.bio ?? "No biography."}</p>
+          {userId != null && <ToggleFollowButton
+            userId={userId}
+            authorId={author.id}
+            initialIsFollowed={followedArtistsIds.has(authorId)}
+          />}
         </div>
 
         <div className="w-full">

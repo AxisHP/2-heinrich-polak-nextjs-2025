@@ -7,6 +7,7 @@ export async function seed(db: Kysely<DB>): Promise<void> {
   await db.deleteFrom("playlists_songs").execute();
   await db.deleteFrom("playlists").execute();
   await db.deleteFrom("user_liked_songs").execute();
+  await db.deleteFrom("user_followed_artists").execute();
   await db.deleteFrom("users").execute();
   await db.deleteFrom("songs").execute();
   await db.deleteFrom("albums").execute();
@@ -98,17 +99,18 @@ export async function seed(db: Kysely<DB>): Promise<void> {
 
   const playlists = await db.selectFrom("playlists").selectAll().execute();
   const allSongs = await db.selectFrom("songs").selectAll().execute();
+  const allArtists = await db.selectFrom("authors").selectAll().execute();
 
   for (const playlist of playlists) {
     const numSongsInPlaylist = faker.number.int({ min: 5, max: 30 });
 
     const shuffledSongs = [...allSongs].sort(() => Math.random() - 0.5);
-    const selectedSongs = shuffledSongs.slice(
+    const selectedArtists = shuffledSongs.slice(
       0,
       Math.min(numSongsInPlaylist, allSongs.length)
     );
 
-    for (const song of selectedSongs) {
+    for (const song of selectedArtists) {
       await db
         .insertInto("playlists_songs")
         .values({
@@ -136,6 +138,26 @@ export async function seed(db: Kysely<DB>): Promise<void> {
         .values({
           user_id: user.id,
           song_id: song.id,
+        })
+        .execute();
+    }
+  }
+
+  for (const user of users) {
+    const numFollowedArtists = faker.number.int({ min: 0, max: 20 });
+
+    const shuffledArtists = [...allArtists].sort(() => Math.random() - 0.5);
+    const selectedArtists = shuffledArtists.slice(
+      0,
+      Math.min(numFollowedArtists, allArtists.length)
+    );
+
+    for (const artist of selectedArtists) {
+      await db
+        .insertInto("user_followed_artists")
+        .values({
+          user_id: user.id,
+          author_id: artist.id,
         })
         .execute();
     }

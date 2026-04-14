@@ -18,10 +18,6 @@ export default function Navbar() {
     <div className="navbar bg-base-100 shadow-sm">
       <div className="flex-1">
         <Link href="/" className="btn btn-ghost text-xl">Spotify</Link>
-        <Link href="/playlists" className="btn btn-ghost">Playlists</Link>
-        <Link href="/liked_songs" className="btn btn-ghost">Liked songs</Link>
-        <Link href="/history" className="btn btn-ghost">History</Link>
-        <Link href='/login' className="btn btn-ghost">Login</Link>
       </div>
       <div className="flex gap-2">
         <input 
@@ -55,10 +51,11 @@ export default function Navbar() {
           <ul
             tabIndex={-1}
             className="menu menu-sm dropdown-content bg-base-100 rounded-box z-1 mt-3 w-52 p-2 shadow">
-            <li>
-              <Link className="justify-between" href="/">
-                Profile</Link>
-            </li>
+            <li><Link href="/playlists">Playlists</Link></li>
+            <li><Link href="/liked_songs">Liked songs</Link></li>
+            <li><Link href="/history">History</Link></li>
+            <li><Link href='/login'>Login</Link></li>
+            <li><Link href='/followed_artists'>Followed artists</Link></li>
             <li><Link href="/settings">Settings</Link></li>
             <li><button onClick={() => handleLogout()}>Logout</button></li>
           </ul>
